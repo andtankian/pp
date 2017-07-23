@@ -29,8 +29,7 @@ public class PP {
         
         Facade facade = new Facade(new FlowContainer(ppa));
         
-        Logger l = CLog.getCLog();
-        l.info(facade.process());
+        facade.process();
         
     }
     

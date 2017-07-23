@@ -40,6 +40,6 @@ public class CLog {
         return logger;
     }
     public static Logger getCLog(){
-        return getCLog("clog");
+        return getCLog("anything");
     }
 }
