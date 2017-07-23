@@ -16,6 +16,9 @@ public class PPArguments {
     
     @Parameter(names={"--logfile", "-l"}, description = "Path to the log file to see what happend while processing")
     private String logFile;
+    
+    @Parameter(names = {"-v", "--version"}, description = "Current version of the program")
+    private boolean version = false;
 
     public boolean isVerbose() {
         return verbose;
@@ -39,6 +42,14 @@ public class PPArguments {
 
     public void setLogFile(String logFile) {
         this.logFile = logFile;
+    }
+
+    public boolean isVersion() {
+        return version;
+    }
+
+    public void setVersion(boolean version) {
+        this.version = version;
     }
     
 }

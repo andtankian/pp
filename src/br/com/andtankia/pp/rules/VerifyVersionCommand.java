@@ -14,7 +14,7 @@ public class VerifyVersionCommand implements ICommand{
     public void exe(FlowContainer fc) {
         PPArguments ppa = fc.getPpholder().getPpa();
         
-        if(ppa.isVerbose()) {
+        if(ppa.isVersion()) {
             fc.setProceed(false);
             fc.getResult().setStatus("ok");
             fc.getResult().getMessage().setText(PP.VERSION);
