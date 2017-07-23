@@ -7,7 +7,7 @@ package br.com.andtankia.pp.dto;
 public class Result {
 
     public Result() {        
-        status = "";
+        status = "ok";
         this.message = new Message();
     }
     

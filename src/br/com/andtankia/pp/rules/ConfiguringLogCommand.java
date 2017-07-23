@@ -18,17 +18,12 @@ public class ConfiguringLogCommand implements ICommand{
         PPArguments ppa = fc.getPpholder().getPpa();
         Logger l;
         if(ppa.getLogFile() == null || ppa.getLogFile().isEmpty()) {
-            try {
-                l = CLog.getCLog();
-            } catch (IOException ex) {
-                Logger.getLogger(ConfiguringLogCommand.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            l = CLog.getCLog();
+                l.info(new StringBuilder("Log file was created in the current working directory which is ").append(System.getProperty("user.dir")).toString());          
+            
         } else {
-            try {
-                l = CLog.getCLog(ppa.getLogFile());
-            } catch (IOException ex) {
-                Logger.getLogger(ConfiguringLogCommand.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            l = CLog.getCLog(ppa.getLogFile());
+                l.info(new StringBuilder("Log file was created on ").append(ppa.getLogFile()).toString());
         }
          
     }

@@ -19,6 +19,9 @@ public class PPArguments {
     
     @Parameter(names = {"-v", "--version"}, description = "Current version of the program")
     private boolean version = false;
+    
+    @Parameter(names = {"--name", "-n"}, description = "Name of the project that will be cloned")
+    private String name;
 
     public boolean isVerbose() {
         return verbose;
@@ -50,6 +53,14 @@ public class PPArguments {
 
     public void setVersion(boolean version) {
         this.version = version;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
     
 }
