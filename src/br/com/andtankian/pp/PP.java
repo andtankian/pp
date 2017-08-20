@@ -17,7 +17,7 @@ public class PP {
      * @param args the command line arguments
      */
     
-    public final static String VERSION = "Current version: 1.0.0";
+    public final static String VERSION = "Current version: 1.1.0";
     public static void main(String[] args) throws IOException {
         PPArguments ppa = new PPArguments();
         /**
