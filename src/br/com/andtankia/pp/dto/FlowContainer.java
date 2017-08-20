@@ -1,5 +1,6 @@
 package br.com.andtankia.pp.dto;
 
+import br.com.andtankia.pp.domain.Project;
 import br.com.andtankia.pp.utils.PPArguments;
 
 /**
@@ -9,7 +10,7 @@ import br.com.andtankia.pp.utils.PPArguments;
 public class FlowContainer {
 
     public FlowContainer(PPArguments ppa) {
-        this.ppholder = new PPHolder();
+        this.ppholder = new PPHolder(new Project());
         this.ppholder.setPpa(ppa);
     }
     

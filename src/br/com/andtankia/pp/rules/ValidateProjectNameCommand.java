@@ -23,10 +23,10 @@ public class ValidateProjectNameCommand implements ICommand{
         }
         
         ppa.setName(pn);
-        
         File f = new File(pn);
         f.mkdirs();
         CLog.getCLog(pn + ".log").info("Project directory created ");
+        fc.getPpholder().getProject().setLocation(pn);
     }
     
 }

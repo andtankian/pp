@@ -1,5 +1,8 @@
 package br.com.andtankia.pp.control;
 
+import br.com.andtankia.pp.domain.AbstractResource;
+import br.com.andtankia.pp.domain.GenericResource;
+import br.com.andtankia.pp.domain.Page;
 import br.com.andtankia.pp.dto.FlowContainer;
 import br.com.andtankia.pp.dto.Result;
 import br.com.andtankia.pp.rules.ICommand;
@@ -7,8 +10,17 @@ import br.com.andtankia.pp.rules.ValidateProjectNameCommand;
 import br.com.andtankia.pp.rules.ValidateURLCommand;
 import br.com.andtankia.pp.rules.VerifyVersionCommand;
 import br.com.andtankia.pp.utils.CLog;
+import br.com.andtankia.pp.utils.PPArguments;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  *
@@ -17,6 +29,7 @@ import java.util.List;
 public class Facade {
 
     FlowContainer fc;
+    Logger l;
 
     public Facade(FlowContainer fc) {
         this.fc = fc;
@@ -30,12 +43,13 @@ public class Facade {
             runBefore();
             run();
             runAfter();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
-        CLog.getCLog().info(fc.getResult().toString());
+        l.info(fc.getResult().toString());
     }
 
-    private void runBefore() throws Exception{
+    private void runBefore() throws Exception {
         List l = new ArrayList();
         l.add(new VerifyVersionCommand());
         l.add(new ValidateProjectNameCommand());
@@ -43,7 +57,7 @@ public class Facade {
 
         for (Object object : l) {
             ((ICommand) object).exe(fc);
-            mustProcced();
+            mustProceed();
         }
     }
 
@@ -51,14 +65,152 @@ public class Facade {
 
     }
 
-    private void run() {
-        
+    private void run() throws IOException {
+
+        l = CLog.getCLog();
+        PPArguments ppa = fc.getPpholder().getPpa();
+        /*If it gets here, we are ready to get content from a website page*/
+        processPage(registerPage(ppa.getUrl()));
+
     }
 
-    private void mustProcced() throws Exception {
+    private void mustProceed() throws Exception {
         if (!fc.isProceed()) {
             throw new Exception(fc.getResult().getMessage().getError());
         }
+    }
+
+    private Page registerPage(String pageUrl) throws IOException {
+        Page p = new Page();
+        if (pageUrl.endsWith(".js")
+                || pageUrl.endsWith(".css")
+                || pageUrl.endsWith(".jpg")
+                || pageUrl.endsWith(".png")
+                || pageUrl.endsWith(".jpeg")
+                || pageUrl.endsWith(".gif")) {
+        } else {
+            StringBuilder sb = new StringBuilder();
+            l.info(sb.append("Registering page resource: ").append(pageUrl).append("...").toString());
+            Document d = Jsoup.connect(pageUrl).get();
+            /*PROBABLY LOADED CORRECTLY, SO THERE IS A PAGE RESOUCE AVAILABLE*/
+            sb.delete(0, sb.length());
+            l.info(sb.append("Getting page resource ").append(pageUrl).append(" content").toString());
+            p.setContent(d.toString());
+            p.setOriginalUrl(pageUrl);
+            p.setName(pageUrl.replace("/", "dash").replace("\\", "dash").replace(":", "colon"));
+            sb.delete(0, sb.length());
+            p.setLocation(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).toString());
+            p.setExtention(".html");
+            sb.delete(0, sb.length());
+            l.info(sb.append("Getting links tag of resource ").append(pageUrl).toString());
+            Elements link = d.getElementsByTag("link");
+            sb.delete(0, sb.length());
+            l.info(sb.append("Total number of link tags: ").append(link.size()).toString());
+            for (Element element : link) {
+                String href = element.attr("href");
+                if (href != null && href.endsWith(".css")) {
+                    GenericResource r = new GenericResource();
+                    r.setOriginalUrl(href);
+                    r.setExtention(".css");
+                    r.setName(href.replace("/", "dash").replace("\\", "dash").replace(":", "colon"));
+                    r.setLocation("css/");
+                    sb.delete(0, sb.length());
+                    r.setUrl(sb.append(r.getLocation()).append(r.getName()).toString());
+                    p.getCsss().add(r);
+                    sb.delete(0, sb.length());
+                    l.info(sb.append("Registering css resource ").append(href).toString());
+                    sb.delete(0, sb.length());
+                    l.info(sb.append("Replacing page resource content original link ").append(href).append(" to created link: ").append(r.getUrl()).toString());
+                    p.setContent(p.getContent().replace(href, r.getUrl()));
+                }
+            }
+        }
+
+        return p;
+    }
+
+    private void processPage(Page page) {
+        StringBuilder sb = new StringBuilder(page.getLocation()).append(page.getName()).append(page.getExtention());
+        File f = new File(sb.toString());
+
+        /*Firstly, write the page resource to a file.*/
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException ioe) {
+                l.severe("Error while trying to create new page resource..\nProgram will be aborted.");
+            }
+            try {
+                FileOutputStream fos = new FileOutputStream(f);
+
+                sb.delete(0, sb.length());
+                l.info(sb.append("Writing page resource ").append(page.getName()).append(" to a file..").toString());
+                fos.write(page.getContent().getBytes());
+
+                fos.flush();
+                fos.close();
+            } catch (IOException ex) {
+                l.severe("Error while trying to write new page resource..\nProgram will be aborted.");
+            }
+        }
+
+        /*Now, compare if children resource like css, js and images exists, 
+        if does, ignore, if doesn't create a new and write.
+        
+        
+        
+        Create css folder if it doesn't exist.*/
+        if (page.getCsss() != null && !page.getCsss().isEmpty()) {
+            sb.delete(0, sb.length());
+            File cssfolders = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append("css").toString());
+            cssfolders.mkdir();
+        }
+        /*Start with css.*/
+        FileOutputStream fosCSS;
+        boolean mustCreateAndWriteCSS = true;
+        for (Object css : page.getCsss()) {
+            AbstractResource aresource = (AbstractResource) css;
+            for (Object allcss : fc.getPpholder().getProject().getAllcsss()) {
+                if (aresource.getName().equals(allcss)) {
+                    mustCreateAndWriteCSS = false;
+                    break;
+                }
+            }
+
+            if (mustCreateAndWriteCSS) {
+                sb.delete(0, sb.length());
+
+                try {
+                    
+                    if(!((GenericResource)aresource).getOriginalUrl().startsWith("https://") &&
+                            !((GenericResource)aresource).getOriginalUrl().startsWith("http://")){
+                        ((GenericResource)aresource).setOriginalUrl(sb.append(page.getOriginalUrl()).append("/")
+                                .append(((GenericResource)aresource).getOriginalUrl()).toString());
+                    }
+                    sb.delete(0, sb.length());
+                    l.info(sb.append("Recovering content of css ").append(aresource.getName()).append("...").toString());
+                    Document cssItSelf = Jsoup.connect(((GenericResource) aresource).getOriginalUrl()).get();
+                    aresource.setContent(cssItSelf.body().text());
+                    sb.delete(0, sb.length());
+                    File cssFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
+                    cssFile.createNewFile();
+                    fosCSS = new FileOutputStream(cssFile);
+
+                    sb.delete(0, sb.length());
+                    l.info(sb.append("Creating and writing css resource ").append(aresource.getName()).append("...").toString());
+                    fosCSS.write(aresource.getContent().getBytes());
+                    fosCSS.flush();
+                    fosCSS.close();
+                    fc.getPpholder().getProject().getAllcsss().add(aresource.getName());
+                } catch (IOException ioe) {
+                    sb.delete(0, sb.length());
+                    l.severe(sb.append("Error while processing css resource ").append(aresource.getName()).append("\nProgram will be aborted.").toString());
+                }
+
+            }
+            mustCreateAndWriteCSS = true;
+        }
+
     }
 
 }
