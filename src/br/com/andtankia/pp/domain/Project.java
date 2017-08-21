@@ -12,12 +12,16 @@ public class Project{
     public Project(String name) {
         pages = new ArrayList();
         allcsss = new ArrayList();
+        alljsss = new ArrayList();
+        allimages = new ArrayList();
         this.name = name;
     }
 
     public Project() {
         pages = new ArrayList();
         allcsss = new ArrayList();
+        alljsss = new ArrayList();
+        allimages = new ArrayList();
     }
     
     
