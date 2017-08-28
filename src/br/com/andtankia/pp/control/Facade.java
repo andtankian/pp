@@ -368,7 +368,7 @@ public class Facade {
                     String inputLine;
                     String finalLine = "";
                     while ((inputLine = in.readLine()) != null) {
-                        finalLine += inputLine;
+                        finalLine += inputLine + "\n";
                     }
                     in.close();
                     aresource.setContent(finalLine);
