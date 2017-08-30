@@ -11,7 +11,6 @@ import br.com.andtankia.pp.rules.ValidateURLCommand;
 import br.com.andtankia.pp.rules.VerifyVersionCommand;
 import br.com.andtankia.pp.utils.CLog;
 import br.com.andtankia.pp.utils.PPArguments;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,11 +36,13 @@ public class Facade {
 
     FlowContainer fc;
     Logger l;
+    StringBuilder sb;
 
     public Facade(FlowContainer fc) {
         this.fc = fc;
         fc.setResult(new Result());
         fc.setProceed(true);
+        sb = new StringBuilder();
     }
 
     public void process() {
@@ -98,7 +99,6 @@ public class Facade {
                 || pageUrl.endsWith(".jpeg")
                 || pageUrl.endsWith(".gif")) {
         } else {
-            StringBuilder sb = new StringBuilder();
             l.info(sb.append("Registering page resource: ").append(pageUrl).append("...").toString());
             Document d = Jsoup.connect(pageUrl).get();
             /*PROBABLY LOADED CORRECTLY, SO THERE IS A PAGE RESOUCE AVAILABLE*/
@@ -236,7 +236,8 @@ public class Facade {
     }
 
     private void processPage(Page page) {
-        StringBuilder sb = new StringBuilder(page.getLocation()).append(page.getName()).append(page.getExtention());
+        sb.delete(0, sb.length());
+        sb.append(page.getLocation()).append(page.getName()).append(page.getExtention());
         File f = new File(sb.toString());
 
         /*Firstly, write the page resource to a file.*/
@@ -263,179 +264,153 @@ public class Facade {
         /*Now, compare if children resource like css, js and images exists, 
         if does, ignore, if doesn't create a new and write.
         
-        Create css folder if it doesn't exist.*/
-        if (page.getCsss() != null && !page.getCsss().isEmpty()) {
-            sb.delete(0, sb.length());
-            File cssfolders = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append("css").toString());
-            cssfolders.mkdir();
-        }
+        Preparing css folders*/
+        prepareFolders(page.getCsss(), "css");
+        /*Preparing js folders*/
+        prepareFolders(page.getJss(), "js");
+        /*Preparing image folders*/
+        prepareFolders(page.getImages(), "images");
 
-        /*Create js folder if it doesn't exist.*/
-        if (page.getJss() != null && !page.getJss().isEmpty()) {
-            sb.delete(0, sb.length());
-            File jsfolders = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append("js").toString());
-            jsfolders.mkdir();
-        }
+        /*We need to create and write all available resources
         
-        /*Create image folder if it doesn't exist.*/
-        if (page.getImages()!= null && !page.getImages().isEmpty()) {
-            sb.delete(0, sb.length());
-            File imgFolders = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append("images").toString());
-            imgFolders.mkdir();
-        }
-
-        /*Write the css file if everything is ok*/
-        FileOutputStream fosCSS, fosJS, fosIMG;
-        boolean mustCreateAndWriteCSS = true;
-        boolean mustCreateAndWriteJS = true;
-        boolean mustCreateAndWriteImg = true;
-
-        /*RELATED TO WRITING CSS FILES*/
-        for (Object css : page.getCsss()) {
-            AbstractResource aresource = (AbstractResource) css;
-            for (Object allcss : fc.getPpholder().getProject().getAllcsss()) {
-                if (aresource.getName().equals(allcss)) {
-                    mustCreateAndWriteCSS = false;
-                    break;
-                }
-            }
-
-            if (mustCreateAndWriteCSS) {
-                sb.delete(0, sb.length());
-
-                try {
-
-                    /*Verify if original url isn't an absolute URL, if it isn't, 
-                        so add the host to the start of url.*/
-                    if (!((GenericResource) aresource).getOriginalUrl().startsWith("https://")
-                            && !((GenericResource) aresource).getOriginalUrl().startsWith("http://")) {
-                        ((GenericResource) aresource).setOriginalUrl(sb.append(page.getOriginalUrl()).append("/")
-                                .append(((GenericResource) aresource).getOriginalUrl()).toString());
-                    }
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Recovering content of css ").append(aresource.getName()).append("...").toString());
-                    Document cssItSelf = Jsoup.connect(((GenericResource) aresource).getOriginalUrl()).get();
-                    aresource.setContent(cssItSelf.body().text());
-                    sb.delete(0, sb.length());
-                    File cssFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
-                    cssFile.createNewFile();
-                    fosCSS = new FileOutputStream(cssFile);
-
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Creating and writing css resource ").append(aresource.getName()).append("...").toString());
-                    fosCSS.write(aresource.getContent().getBytes());
-                    fosCSS.flush();
-                    fosCSS.close();
-                    fc.getPpholder().getProject().getAllcsss().add(aresource.getName());
-                } catch (IOException ioe) {
-                    sb.delete(0, sb.length());
-                    l.severe(sb.append("Error while processing css resource ").append(aresource.getName()).append("\nProgram will be aborted.").toString());
-                }
-
-            }
-            mustCreateAndWriteCSS = true;
-        }
-
-        /*RELATED TO WRITING JS FILES*/
-        for (Object js : page.getJss()) {
-            AbstractResource aresource = (AbstractResource) js;
-            for (Object alljs : fc.getPpholder().getProject().getAlljsss()) {
-                if (aresource.getName().equals(alljs)) {
-                    mustCreateAndWriteJS = false;
-                    break;
-                }
-            }
-
-            if (mustCreateAndWriteJS) {
-                sb.delete(0, sb.length());
-
-                try {
-
-                    /*Verify if original url isn't an absolute URL, if it isn't, 
-                        so add the host to the start of url.*/
-                    if (!((GenericResource) aresource).getOriginalUrl().startsWith("https://")
-                            && !((GenericResource) aresource).getOriginalUrl().startsWith("http://")) {
-                        ((GenericResource) aresource).setOriginalUrl(sb.append(page.getOriginalUrl()).append("/")
-                                .append(((GenericResource) aresource).getOriginalUrl()).toString());
-                    }
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Recovering content of js file ").append(aresource.getName()).append("...").toString());
-
-                    URL jsfileURL = new URL(((GenericResource) aresource).getOriginalUrl());
-                    URLConnection jsfileURLConnection = jsfileURL.openConnection();
-                    BufferedReader in = new BufferedReader(new InputStreamReader(
-                            jsfileURLConnection.getInputStream()));
-                    String inputLine;
-                    String finalLine = "";
-                    while ((inputLine = in.readLine()) != null) {
-                        finalLine += inputLine + "\n";
-                    }
-                    in.close();
-                    aresource.setContent(finalLine);
-                    sb.delete(0, sb.length());
-                    File jsFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
-                    jsFile.createNewFile();
-                    fosJS = new FileOutputStream(jsFile);
-
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Creating and writing js resource ").append(aresource.getName()).append("...").toString());
-                    fosJS.write(aresource.getContent().getBytes());
-                    fosJS.flush();
-                    fosJS.close();
-                    fc.getPpholder().getProject().getAlljsss().add(aresource.getName());
-                } catch (IOException ioe) {
-                    sb.delete(0, sb.length());
-                    l.severe(sb.append("Error while processing JS resource ").append(aresource.getName()).append("\nProgram will be aborted.").toString());
-                }
-
-            }
-            mustCreateAndWriteJS = true;
-        }
-
-        /*RELATED TO WRITING IMG FILES*/
-        for (Object img : page.getImages()) {
-            AbstractResource aresource = (AbstractResource) img;
-            for (Object allimg : fc.getPpholder().getProject().getAllimages()) {
-                if (aresource.getName().equals(allimg)) {
-                    mustCreateAndWriteImg = false;
-                    break;
-                }
-            }
-
-            if (mustCreateAndWriteImg) {
-                sb.delete(0, sb.length());
-
-                try {
-
-                    /*Verify if original url isn't an absolute URL, if it isn't, 
-                        so add the host to the start of url.*/
-                    if (!((GenericResource) aresource).getOriginalUrl().startsWith("https://")
-                            && !((GenericResource) aresource).getOriginalUrl().startsWith("http://")) {
-                        ((GenericResource) aresource).setOriginalUrl(sb.append(page.getOriginalUrl()).append("/")
-                                .append(((GenericResource) aresource).getOriginalUrl()).toString());
-                    }
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Recovering content of img file ").append(aresource.getName()).append("...").toString());
-
-                    BufferedImage image = null;
-                    URL url = new URL(((GenericResource)aresource).getOriginalUrl());
-                    image = ImageIO.read(url);
-                    sb.delete(0, sb.length());
-                    File imgFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
-                    imgFile.createNewFile();
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Creating and writing js resource ").append(aresource.getName()).append("...").toString());
-                    ImageIO.write(image, aresource.getExtention().replace(".", ""), imgFile);
-                    fc.getPpholder().getProject().getAllimages().add(aresource.getName());
-                } catch (IOException ioe) {
-                    sb.delete(0, sb.length());
-                    l.severe(sb.append("Error while processing IMG resource ").append(aresource.getName()).append("\nProgram will be aborted.").toString());
-                }
-
-            }
-            mustCreateAndWriteImg = true;
-        }
+        Write css resources*/
+        writeResource(page, fc.getPpholder().getProject().getAllcsss(), "css");
+        /*Write js resources*/
+        writeResource(page, fc.getPpholder().getProject().getAlljsss(), "js");
+        /*Write images resources*/
+        writeResource(page, fc.getPpholder().getProject().getAllimages(), "image");
 
     }
 
+    /**
+     * *
+     * Method to prepare the folders when a project has many resources as css,
+     * js and images.
+     *
+     * @param resources
+     * @param type
+     */
+    private void prepareFolders(List resources, String type) {
+        sb = sb != null ? sb : new StringBuilder();
+        if (resources != null && !resources.isEmpty()) {
+            sb.delete(0, sb.length());
+            File resourceFolders = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(type).toString());
+            resourceFolders.mkdir();
+        }
+    }
+
+    /**
+     * Method to write an generic resource
+     * @param page
+     * @param projectResourcesToCompare
+     * @param type 
+     */
+    private void writeResource(Page page, List projectResourcesToCompare, String type) {
+        boolean processing = true;
+        List resources = null;
+        FileOutputStream fos;
+        if (type.equals("js")) {
+            resources = page.getJss();
+        } else if (type.equals("css")) {
+            resources = page.getCsss();
+        } else if (type.equals("image")) {
+            resources = page.getImages();
+        }
+        for (Object resource : resources) {
+            AbstractResource aresource = (AbstractResource) resource;
+            for (Object prtc : projectResourcesToCompare) {
+                if (aresource.getName().equals(prtc)) {
+                    processing = false;
+                    break;
+                }
+            }
+
+            if (processing) {
+                sb.delete(0, sb.length());
+                /*Verify if original url isn't an absolute URL, if it isn't, 
+                        so add the host to the start of url.*/
+                if (!((GenericResource) aresource).getOriginalUrl().startsWith("https://")
+                        && !((GenericResource) aresource).getOriginalUrl().startsWith("http://")) {
+                    ((GenericResource) aresource).setOriginalUrl(sb.append(fc.getPpholder().getProject().getBaseIndex()).append("/")
+                            .append(((GenericResource) aresource).getOriginalUrl()).toString());
+                }
+                sb.delete(0, sb.length());
+                l.info(sb.append("Recovering content of ").append(type).append(" ").append(aresource.getName()).append("...").toString());
+
+                /*Execute this block if resource is a CSS resource*/
+                if (type.equals("css")) {
+                    try {
+                        Document cssItSelf = Jsoup.connect(((GenericResource) aresource).getOriginalUrl()).get();
+                        aresource.setContent(cssItSelf.body().text());
+                        sb.delete(0, sb.length());
+                        File cssFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
+                        cssFile.createNewFile();
+                        fos = new FileOutputStream(cssFile);
+                        sb.delete(0, sb.length());
+                        l.info(sb.append("Creating and writing css resource ").append(aresource.getName()).append("...").toString());
+                        fos.write(aresource.getContent().getBytes());
+                        fos.flush();
+                        fos.close();
+                        fc.getPpholder().getProject().getAllcsss().add(aresource.getName());
+                    } catch (IOException io) {
+                        sb.delete(0, sb.length());
+                        l.warning(sb.append("An error ").append(io.getMessage()).append(" occurred while writing css resource ").append(aresource.getName()).toString());
+                    }
+                } else if (type.equals("js")) {
+                    /*Execute this block when resource is a JS file*/
+                    try {
+                        sb.delete(0, sb.length());
+                        l.info(sb.append("Recovering content of js file ").append(aresource.getName()).append("...").toString());
+
+                        URL jsfileURL = new URL(((GenericResource) aresource).getOriginalUrl());
+                        URLConnection jsfileURLConnection = jsfileURL.openConnection();
+                        BufferedReader in = new BufferedReader(new InputStreamReader(
+                                jsfileURLConnection.getInputStream()));
+                        String inputLine;
+                        String finalLine = "";
+                        while ((inputLine = in.readLine()) != null) {
+                            finalLine += inputLine + "\n";
+                        }
+                        in.close();
+                        aresource.setContent(finalLine);
+                        sb.delete(0, sb.length());
+                        File jsFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
+                        jsFile.createNewFile();
+                        fos = new FileOutputStream(jsFile);
+                        sb.delete(0, sb.length());
+                        l.info(sb.append("Creating and writing js resource ").append(aresource.getName()).append("...").toString());
+                        fos.write(aresource.getContent().getBytes());
+                        fos.flush();
+                        fos.close();
+                        fc.getPpholder().getProject().getAlljsss().add(aresource.getName());
+                    } catch (IOException io) {
+                        sb.delete(0, sb.length());
+                        l.warning(sb.append("An error ").append(io.getMessage()).append(" occurred while writing js resource ").append(aresource.getName()).toString());
+                    }
+                } else if (type.equals("image")) {
+
+                    /*Execute this block when its an image resource*/
+                    try {
+                        sb.delete(0, sb.length());
+                        l.info(sb.append("Recovering content of image file ").append(aresource.getName()).append("...").toString());
+
+                        BufferedImage image = null;
+                        URL url = new URL(((GenericResource) aresource).getOriginalUrl());
+                        image = ImageIO.read(url);
+                        sb.delete(0, sb.length());
+                        File imgFile = new File(sb.append(fc.getPpholder().getProject().getLocation()).append(File.separator).append(aresource.getUrl()).toString());
+                        imgFile.createNewFile();
+                        sb.delete(0, sb.length());
+                        l.info(sb.append("Creating and writing image resource ").append(aresource.getName()).append("...").toString());
+                        ImageIO.write(image, aresource.getExtention().replace(".", ""), imgFile);
+                        fc.getPpholder().getProject().getAllimages().add(aresource.getName());
+                    } catch (IOException io) {
+                        sb.delete(0, sb.length());
+                        l.warning(sb.append("An error ").append(io.getMessage()).append(" occurred while writing image resource ").append(aresource.getName()).toString());
+                    }
+                }
+            }
+            processing = true;
+        }
+    }
 }
