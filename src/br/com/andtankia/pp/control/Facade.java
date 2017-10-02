@@ -113,123 +113,23 @@ public class Facade {
             l.info(sb.append("Getting links tag of resource ").append(pageUrl).toString());
 
             /*Treatment when elements are links (probably css)*/
-            Elements links = d.getElementsByTag("link");
-            links = links != null ? links : new Elements();
-            sb.delete(0, sb.length());
-            l.info(sb.append("Total number of link tags: ").append(links.size()).toString());
-            for (Element element : links) {
-                element.removeAttr("crossorigin");
-                element.removeAttr("integrity");
-                String href = element.attr("href");
-                if (href != null && href.endsWith(".css")) {
-                    GenericResource r = new GenericResource();
-                    r.setOriginalUrl(href);
-                    r.setExtention(".css");
-                    r.setName(href.replace("/", "dash").replace("\\", "dash").replace(":", "colon"));
-                    r.setLocation("css/");
-                    sb.delete(0, sb.length());
-                    r.setUrl(sb.append(r.getLocation()).append(r.getName()).toString());
-                    p.getCsss().add(r);
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Registering css resource ").append(href).toString());
-                }
-            }
+            extractStringInformationFromTags(p, d.getElementsByTag("link"));
 
             /*Treatment when element is script*/
-            Elements scripts = d.getElementsByTag("script");
-            scripts = scripts != null ? scripts : new Elements();
-            sb.delete(0, sb.length());
-            l.info(sb.append("Total number of script tags: ").append(scripts.size()).toString());
-            for (Element script : scripts) {
-                script.removeAttr("crossorigin");
-                script.removeAttr("integrity");
-                String src = script.attr("src");
-
-                if (src != null && src.endsWith(".js")) {
-                    GenericResource r = new GenericResource();
-                    r.setOriginalUrl(src);
-                    r.setExtention(".js");
-                    r.setName(src.replace("/", "dash").replace("\\", "dash").replace(":", "colon"));
-                    r.setLocation("js/");
-                    sb.delete(0, sb.length());
-                    r.setUrl(sb.append(r.getLocation()).append(r.getName()).toString());
-                    p.getJss().add(r);
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Registering JS resource ").append(src).toString());
-                }
-            }
+            extractStringInformationFromTags(p, d.getElementsByTag("script"));
 
             /*Treatment when element is image*/
-            Elements imgs = d.getElementsByTag("img");
-            imgs = imgs != null ? imgs : new Elements();
-            sb.delete(0, sb.length());
-            l.info(sb.append("Total number of img tags: ").append(imgs.size()).toString());
-            for (Element img : imgs) {
-                img.removeAttr("crossorigin");
-                img.removeAttr("integrity");
-                String src = img.attr("src");
-
-                if (src != null && (src.endsWith(".jpg") || src.endsWith(".png") || src.endsWith(".gif"))) {
-                    GenericResource r = new GenericResource();
-                    r.setOriginalUrl(src);
-                    r.setExtention(src.substring(src.length() - 4, src.length()));
-                    r.setName(src.replace("/", "dash").replace("\\", "dash").replace(":", "colon"));
-                    r.setLocation("images/");
-                    sb.delete(0, sb.length());
-                    r.setUrl(sb.append(r.getLocation()).append(r.getName()).toString());
-                    p.getImages().add(r);
-                    sb.delete(0, sb.length());
-                    l.info(sb.append("Registering image resource ").append(src).toString());
-                }
-            }
-
-            sb.delete(0, sb.length());
-            l.info(sb.append("Total number of csss files read: ").append(p.getCsss().size()).toString());
-            sb.delete(0, sb.length());
-            l.info(sb.append("Total number of jss files read: ").append(p.getJss().size()).toString());
-            sb.delete(0, sb.length());
-            l.info(sb.append("Total number of images files read: ").append(p.getImages().size()).toString());
-
-            /*GET THE PAGE CONTENT*/
+            extractStringInformationFromTags(p, d.getElementsByTag("img"));
+            
+            /*TO WRITE CONTENT RECOVERED FROM PAGE*/
             p.setContent(d.toString());
-
-            /*JUST TO REPLACE ORIGINAL URLS BY SYMBOLIC URLS*/
-            sb.delete(0, sb.length());
-
-            l.info(sb.append("Process to replace original urls to created symbolic urls..").toString());
-            for (Element link : links) {
-                for (Object css : p.getCsss()) {
-                    GenericResource gcss = (GenericResource) css;
-                    if (link.attr("href").equals(gcss.getOriginalUrl())) {
-                        sb.delete(0, sb.length());
-                        l.info(sb.append("Replacing old css href ").append(gcss.getOriginalUrl()).append(" to ")
-                                .append(gcss.getUrl()).toString());
-                        p.setContent(p.getContent().replace(gcss.getOriginalUrl(), gcss.getUrl()));
-                    }
-                }
-            }
-            for (Element script : scripts) {
-                for (Object js : p.getJss()) {
-                    GenericResource gjs = (GenericResource) js;
-                    if (script.attr("src").equals(gjs.getOriginalUrl())) {
-                        sb.delete(0, sb.length());
-                        l.info(sb.append("Replacing old js src ").append(gjs.getOriginalUrl()).append(" to ")
-                                .append(gjs.getUrl()).toString());
-                        p.setContent(p.getContent().replace(gjs.getOriginalUrl(), gjs.getUrl()));
-                    }
-                }
-            }
-            for (Element img : imgs) {
-                for (Object pic : p.getImages()) {
-                    GenericResource gpic = (GenericResource) pic;
-                    if (img.attr("src").equals(gpic.getOriginalUrl())) {
-                        sb.delete(0, sb.length());
-                        l.info(sb.append("Replacing old img src ").append(gpic.getOriginalUrl()).append(" to ")
-                                .append(gpic.getUrl()).toString());
-                        p.setContent(p.getContent().replace(gpic.getOriginalUrl(), gpic.getUrl()));
-                    }
-                }
-            }
+            
+            /*ADJUST LINKS AND TAGS OF THE PAGE CONTENT*/
+            replaceFromPage(p, d.getElementsByTag("link"));
+            replaceFromPage(p, d.getElementsByTag("script"));
+            replaceFromPage(p, d.getElementsByTag("img"));
+            
+            
         }
 
         return p;
@@ -301,9 +201,10 @@ public class Facade {
 
     /**
      * Method to write an generic resource
+     *
      * @param page
      * @param projectResourcesToCompare
-     * @param type 
+     * @param type
      */
     private void writeResource(Page page, List projectResourcesToCompare, String type) {
         boolean processing = true;
@@ -331,6 +232,10 @@ public class Facade {
                         so add the host to the start of url.*/
                 if (!((GenericResource) aresource).getOriginalUrl().startsWith("https://")
                         && !((GenericResource) aresource).getOriginalUrl().startsWith("http://")) {
+                    boolean hasEndingDash = false;
+                    if (fc.getPpholder().getProject().getBaseIndex().endsWith("/")) {
+                        fc.getPpholder().getProject().setBaseIndex(fc.getPpholder().getProject().getBaseIndex().substring(0, fc.getPpholder().getProject().getBaseIndex().length() - 1));
+                    }
                     ((GenericResource) aresource).setOriginalUrl(sb.append(fc.getPpholder().getProject().getBaseIndex()).append("/")
                             .append(((GenericResource) aresource).getOriginalUrl()).toString());
                 }
@@ -411,6 +316,105 @@ public class Facade {
                 }
             }
             processing = true;
+        }
+    }
+
+    private void extractStringInformationFromTags(Page p, List elements) {
+        if (elements != null && !elements.isEmpty()) {
+            Elements _elements = (Elements) elements;
+            String tn = _elements.get(0).tagName();
+            String extension, location, type, attr, link;
+            String[] extensions = null;
+            List resource = null;
+            extension = location = type = attr = link = null;
+            for (Element _element : _elements) {
+                _element.removeAttr("crossorigin");
+                _element.removeAttr("integrity");
+                if (tn.equals("link")) {
+                    extension = ".css";
+                    extensions = new String[]{".css"};
+                    location = "css/";
+                    type = "css";
+                    attr = "href";
+                    resource = p.getCsss();
+                } else if (tn.equals("script")) {
+                    extension = ".js";
+                    extensions = new String[]{".js"};
+                    location = "js/";
+                    type = "js";
+                    attr = "src";
+                    resource = p.getJss();
+                } else if (tn.equals("img")) {
+                    extensions = new String[]{".jpg", ".png", ".gif", ".jpeg"};
+                    location = "images/";
+                    type = "image";
+                    attr = "src";
+                    resource = p.getImages();
+                }
+
+                link = _element.attr(attr);
+
+                /*Little trick when tag link has more then one extension, like images*/
+                boolean validExtension = false;
+                for (Object ext : extensions) {
+                    String ex = (String) ext;
+                    if (link.endsWith(ex)) {
+                        extension = ex;
+                        validExtension = true;
+                        break;
+                    }
+                }
+                if (link != null && validExtension) {
+                    GenericResource r = new GenericResource();
+                    r.setOriginalUrl(link);
+                    r.setExtention(extension);
+                    r.setName(link.replace("/", "dash").replace("\\", "dash").replace(":", "colon"));
+                    r.setLocation(location);
+                    sb.delete(0, sb.length());
+                    r.setUrl(sb.append(r.getLocation()).append(r.getName()).toString());
+                    resource.add(r);
+                    sb.delete(0, sb.length());
+                    l.info(sb.append("Registering ").append(type).append(" resource: ")
+                            .append(r.getOriginalUrl()).toString());
+                }
+
+            }
+            
+            sb.delete(0, sb.length());
+        l.info(sb.append("Total number of ").append(type).append(" files read: ").append(elements.size()).toString());
+
+        }
+    }
+
+    private void replaceFromPage(Page p, List elements) {
+        Elements _elements = (Elements) elements;
+
+        if (_elements != null && !_elements.isEmpty()) {
+            List resource = null;
+            String attr = "";
+            sb.delete(0, sb.length());
+            for (Element _element : _elements) {
+                if(_element.tagName().equals("script")){
+                    resource = p.getJss();
+                    attr = "src";
+                } else if(_element.tagName().equals("link")){
+                    resource = p.getCsss();
+                    attr = "href";
+                } else if(_element.tagName().equals("img")){
+                    resource = p.getImages();
+                    attr = "src";
+                }
+                for (Object asset : resource) {
+                    GenericResource gr = (GenericResource) asset;
+                    if (_element.attr(attr).equals(gr.getOriginalUrl())) {
+                        sb.delete(0, sb.length());
+                        l.info(sb.append("Replacing old resource ").append(attr).append(" ").append(gr.getOriginalUrl()).append(" to ")
+                                .append(gr.getUrl()).toString());
+                        p.setContent(p.getContent().replace(gr.getOriginalUrl(), gr.getUrl()));
+                        break;
+                    }
+                }
+            }
         }
     }
 }

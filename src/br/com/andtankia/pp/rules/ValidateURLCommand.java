@@ -1,7 +1,6 @@
 package br.com.andtankia.pp.rules;
 
 import br.com.andtankia.pp.dto.FlowContainer;
-import br.com.andtankia.pp.utils.CLog;
 import br.com.andtankia.pp.utils.PPArguments;
 
 /**

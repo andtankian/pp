@@ -22,7 +22,10 @@ public class PPArguments {
     
     @Parameter(names = {"--name", "-n"}, description = "Name of the project that will be cloned")
     private String name;
-
+    
+    @Parameter(names = {"-i", "--index"}, description = "Base index address to program try to guess where assets are located")
+    private String index;
+    
     public boolean isVerbose() {
         return verbose;
     }
@@ -61,6 +64,14 @@ public class PPArguments {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getIndex() {
+        return index;
+    }
+
+    public void setIndex(String index) {
+        this.index = index;
     }
     
 }

@@ -32,6 +32,7 @@ public class Project{
     private List alljsss;
     private String name;
     private String location;
+    private String baseIndex;
 
     public List getPages() {
         return pages;
@@ -79,6 +80,14 @@ public class Project{
 
     public void setAlljsss(List alljsss) {
         this.alljsss = alljsss;
+    }
+
+    public String getBaseIndex() {
+        return baseIndex;
+    }
+
+    public void setBaseIndex(String baseIndex) {
+        this.baseIndex = baseIndex;
     }
     
 }
